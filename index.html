@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GEOBONN EXPENDITURE</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Budget control</p>
+        <h1>GEOBONN EXPENDITURE</h1>
+      </div>
+      <div class="header-actions">
+        <button id="monthlyPdfBtn" type="button">Monthly PDF</button>
+        <button id="expensePdfBtn" type="button">Yearly PDF</button>
+        <button id="exportCsvBtn" type="button">Export CSV</button>
+        <label class="privacy-toggle">
+          <input id="hideAmountsInput" type="checkbox" />
+          Hide amounts
+        </label>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="sync-panel panel" aria-label="Cloud synchronisation">
+        <div>
+          <p class="section-kicker">Live status</p>
+          <h2 id="syncStatus">Local mode</h2>
+          <p id="syncHelp" class="sync-help">Connect an account to make this system live across devices.</p>
+        </div>
+        <div class="sync-actions">
+          <button id="openAuthBtn" type="button">Account</button>
+          <button id="signOutBtn" type="button" class="secondary" hidden>Sign Out</button>
+        </div>
+      </section>
+
+      <section class="toolbar nav-toolbar" aria-label="Budget period controls">
+        <label>
+          Year
+          <select id="yearSelect"></select>
+        </label>
+        <label>
+          Month
+          <select id="monthSelect"></select>
+        </label>
+        <label>
+          New month
+          <input id="newMonthInput" type="month" />
+        </label>
+        <button id="addMonthBtn" type="button">Add Month</button>
+        <button id="resetBtn" type="button" class="secondary">Reset to Workbook</button>
+      </section>
+
+      <section class="summary-grid" aria-label="Budget summary">
+        <article class="summary-card">
+          <span>Planned</span>
+          <strong id="plannedTotal">KES 0</strong>
+        </article>
+        <article class="summary-card">
+          <span>Paid</span>
+          <strong id="paidTotal">KES 0</strong>
+        </article>
+        <article class="summary-card">
+          <span>Balance</span>
+          <strong id="balanceTotal">KES 0</strong>
+        </article>
+        <article class="summary-card">
+          <span>Completion</span>
+          <strong id="completionRate">0%</strong>
+        </article>
+      </section>
+
+      <section class="yearly-panel panel" aria-label="Yearly expenditure summary">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Yearly expenditure</p>
+            <h2 id="yearlyTitle">Year summary</h2>
+          </div>
+          <strong id="yearlyTotal" class="yearly-total">KES 0</strong>
+        </div>
+        <div class="yearly-grid">
+          <div id="yearlyMonthBars" class="yearly-bars"></div>
+          <div class="comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th class="number">Planned</th>
+                  <th class="number">Paid</th>
+                  <th class="number">Variance vs previous</th>
+                </tr>
+              </thead>
+              <tbody id="yearComparisonBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="entryForm" class="panel entry-panel">
+          <div class="panel-heading">
+            <h2 id="formTitle">Add budget item</h2>
+            <button id="clearFormBtn" type="button" class="icon-button" title="Clear form">Clear</button>
+          </div>
+
+          <!-- Auth lock banner shown when not signed in -->
+          <div id="authLockBanner" class="auth-lock-banner" hidden>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Sign in to add or edit budget items
+          </div>
+
+          <input id="entryId" type="hidden" />
+          <label>
+            Item
+            <input id="itemInput" type="text" required placeholder="Rent" />
+          </label>
+          <label>
+            Planned cost
+            <input id="plannedInput" type="number" min="0" step="0.01" required placeholder="8500" />
+          </label>
+          <label>
+            Amount paid
+            <input id="paidInput" type="number" min="0" step="0.01" required placeholder="0" />
+          </label>
+          <label>
+            Status
+            <select id="statusInput">
+              <option value="">Auto</option>
+              <option value="CLEARED">CLEARED</option>
+              <option value="PARTIAL">PARTIAL</option>
+              <option value="PENDING">PENDING</option>
+              <option value="OVERPAID">OVERPAID</option>
+            </select>
+          </label>
+          <button type="submit" id="saveItemBtn">Save Item</button>
+        </form>
+
+        <section class="panel table-panel">
+          <div class="panel-heading">
+            <h2>Monthly items</h2>
+            <input id="searchInput" type="search" placeholder="Search item" />
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Planned</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="insights">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Monthly trend</h2>
+          </div>
+          <div id="trendChart" class="trend-chart" aria-label="Monthly spending trend"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Payment log</h2>
+          </div>
+          <form id="paymentForm" class="payment-form">
+            <label>
+              Item
+              <select id="paymentItemSelect"></select>
+            </label>
+            <label>
+              Date
+              <input id="paymentDateInput" type="date" required />
+            </label>
+            <label>
+              Amount
+              <input id="paymentAmountInput" type="number" min="0.01" step="0.01" required />
+            </label>
+            <button type="submit" id="recordPaymentBtn">Record Payment</button>
+          </form>
+          <div id="paymentLog" class="payment-log"></div>
+        </article>
+      </section>
+
+      <!-- Audit Trail / History Panel -->
+      <section class="panel" aria-label="Change history and undo">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Audit trail</p>
+            <h2>Change history</h2>
+          </div>
+          <button id="clearAuditBtn" type="button" class="icon-button secondary">Clear log</button>
+        </div>
+        <p class="sync-help" style="margin-bottom:12px">Every add, edit, delete and payment is logged here. Click Undo to revert any change.</p>
+        <div id="auditLog" class="audit-trail-section">
+          <p class="empty-state">No changes recorded yet.</p>
+        </div>
+      </section>
+    </main>
+
+    <template id="emptyStateTemplate">
+      <tr>
+        <td colspan="7" class="empty-state">No budget items found for this month.</td>
+      </tr>
+    </template>
+
+    <div id="authModal" class="modal-shell" hidden>
+      <div class="modal-backdrop" data-close-auth></div>
+      <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="section-kicker">Account access</p>
+            <h2 id="authModalTitle">Sign in or create account</h2>
+          </div>
+          <button id="closeAuthBtn" type="button" class="icon-button" title="Close">Close</button>
+        </div>
+        <p class="sync-help" style="margin-bottom:16px">Use the same account on every device to keep GEOBONN EXPENDITURE live.</p>
+        <form id="authForm" class="auth-form">
+          <label>
+            Email
+            <input id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
+          </label>
+          <label>
+            Password
+            <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Password" />
+          </label>
+          <div class="auth-actions">
+            <button id="signInBtn" type="button">Sign In</button>
+            <button id="signUpBtn" type="button" class="secondary">Create Account</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="userBadge" class="user-badge" hidden>
+      <span class="user-badge-dot"></span>
+      <span id="userBadgeEmail"></span>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
